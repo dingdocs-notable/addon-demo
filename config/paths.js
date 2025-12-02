@@ -2,7 +2,6 @@
 
 const path = require('path');
 const fs = require('fs');
-const glob = require('glob');
 const getPublicUrlOrPath = require('react-dev-utils/getPublicUrlOrPath');
 
 // Make sure any symlinks in the project folder are resolved:

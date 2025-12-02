@@ -1,4 +1,5 @@
 /*global DingdocsScript*/
+import type {} from 'dingtalk-docs-cool-app';
 
 /**
  * AI表格边栏插件服务层
@@ -283,7 +284,7 @@ async function deleteRecord(recordId: string, sheetId?: string) {
       throw new Error('未找到指定的数据表');
     }
     
-    await sheet.deleteRecordsAsync(recordId);
+    await sheet.deleteRecordsAsync([recordId]);
     return { success: true };
   } catch (error: any) {
     throw new Error(`删除记录失败: ${error.message}`);
