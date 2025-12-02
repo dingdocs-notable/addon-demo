@@ -28,53 +28,58 @@
 ## 📁 项目结构
 
 ```
-src/
-├── components/          # React组件
-│   ├── App.tsx         # 主应用组件
-│   ├── locales.ts      # 国际化配置
-│   └── style.css       # 样式文件
-├── entries/            # 入口文件
-│   ├── script.tsx      # 脚本入口
-│   └── ui.tsx          # UI入口
-└── script/             # Service Worker
-    └── service.ts      # 核心业务逻辑
+---------------------前端示例------------------------
+├── src/
+│   ├── components/       # React组件
+│   │   ├── App.tsx       # 主应用组件，包含configPermission初始化逻辑
+│   │   ├── locales.ts    # 国际化配置
+│   │   └── style.css     # 样式文件
+│   ├── entries/          # 入口文件
+│   │   ├── script.tsx    # 脚本入口
+│   │   └── ui.tsx        # UI入口
+│   └── script/           # Service Worker (后台服务)
+│       └── service.ts    # 核心业务逻辑
+---------------------服务端示例------------------------
+└── local_server/
+    ├── server.ts         # 服务端核心逻辑，处理DingTalk API请求和签名计算
+    └── .env.server       # 服务端环境变量文件，存储钉钉应用凭证
 ```
 
 ## 🚀 快速开始
 
 ### 环境要求
-- Node.js >= 16
-- npm 或 yarn
+- Node.js >= 18
+- npm/yarn/pnpm
 
 ### 安装依赖
 ```bash
-npm install
-# 或
-yarn install
+pnpm install
 ```
 
 ### 开发模式
 ```bash
-npm start
-# 或
-yarn start
+pnpm start
 ```
 应用将在 http://localhost:3000 启动（如端口被占用会自动选择下一个可用端口）
 
+> 插件公开发布场景下需要额外启动服务端
+```bash
+pnpm start:server
+```
+服务端将在 http://localhost:3001 启动
+
 ### 构建生产版本
 ```bash
-npm run build
-# 或
-yarn build
+pnpm run build
 ```
 
 ## 📋 可用脚本
 
 | 命令 | 描述 |
 |------|------|
-| `npm start` | 启动开发服务器 |
-| `npm run build` | 构建生产版本 |
-| `npm test` | 运行测试 |
+| `pnpm start` | 启动开发服务器 |
+| `pnpm run build` | 构建生产版本 |
+| `pnpm test` | 运行测试 |
 
 ## 🎯 核心功能说明
 
@@ -132,6 +137,26 @@ A: 确保manifest.json配置正确，检查构建输出目录。
 
 ### Q: 事件监听不生效？
 A: 确认DingTalk环境支持相应的事件API。
+
+### Q: 获取文档信息失败: PermissionError:
+    Do not have permission to access this document.
+    Using "Dingdocs.base.host.configPermission(agentId, corpId, timeStamp, nonceStr, signature, ['DingdocsScript.base.readWriteAll'])." to verify permission configuration information.
+A: 当发布企业内插件或第三方企业插件时，需要使用 `configPermission` 进行额外鉴权，以允许插件读写AI表格数据。
+
+本地服务端配置要求:
+- `.env.server` 文件用于存储插件所属钉钉应用的身份信息（AppKey、AppSecret、AgentId、corpId）
+- 运行 `pnpm start:server` 启动本地服务端来处理鉴权请求
+
+服务端(server.ts)功能:
+- 从钉钉API获取访问令牌(access token)
+- 生成Jsapi Ticket(jsapiTicket)
+- 计算签名(signature)用于前端配置
+- 提供 `/api/configPermission` 端点供前端调用
+
+鉴权流程:
+1. 前端在 `initView` 的 `ready` 回调中自动发起鉴权请求
+2. 向服务端发送请求 `/api/configPermission` 请求，服务端生成所需的鉴权参数（timeStamp、nonceStr、signature等）
+4. 前端使用返回参数调用 `Dingdocs.base.host.configPermission` 完成鉴权
 
 ## 📄 许可证
 

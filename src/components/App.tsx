@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { initView } from 'dingtalk-docs-cool-app';
 import { Typography, Button, Collapse, Card } from 'dingtalk-design-desktop';
-import { getLocale, type Locales } from './locales.ts';
+import { getLocale, type Locales } from './locales';
 import './style.css';
 
 interface Sheet {
@@ -99,6 +99,40 @@ function App() {
       }
     };
 
+    // 初始化鉴权
+    const initConfigPermission = async () => {
+      try {
+        // 获取当前页面的URL
+        const currentUrl = window.location.href;
+        console.log('Current URL for config permission:', currentUrl);
+
+        // 从后端服务器请求钉钉配置权限
+        const response = await fetch(`/api/configPermission?url=${encodeURIComponent(currentUrl)}`);
+        if (!response.ok) {
+          throw new Error(`请求失败: ${response.status} ${response.statusText}`);
+        }
+
+        const configData = await response.json();
+        console.log('Received config permission data:', configData);
+
+        // 调用钉钉配置方法
+        await Dingdocs.base.host.configPermission(
+          configData.agentId,
+          configData.corpId,
+          configData.timeStamp,
+          configData.nonceStr,
+          configData.signature,
+          configData.jsApiList || ["DingdocsScript.base.readWriteAll"],
+        );
+
+        console.log('Config permission set successfully');
+      } catch (error) {
+        console.error('Config permission error:', error);
+        // 保留之前的错误信息，但更友好地处理
+        console.warn('Config permission failed - this may affect some functionality');
+      }
+    };
+
     let unsubscribers: Array<() => void> = [];
     let lastSheetId: string | null = null; // 记录上次的sheetId，避免重复触发
     let debounceTimer: NodeJS.Timeout | null = null; // 防抖定时器
@@ -111,7 +145,7 @@ function App() {
           if (selection.sheetId && selection.sheetId !== lastSheetId) {
             lastSheetId = selection.sheetId;
             console.log('Active sheet changed to:', selection.sheetId);
-            
+
             // 使用防抖来避免频繁调用
             if (debounceTimer) {
               clearTimeout(debounceTimer);
@@ -201,7 +235,7 @@ function App() {
 
         // 保存所有取消监听的函数
         setEventUnsubscribers(unsubscribers);
-        
+
         console.log('Event listeners setup completed');
       } catch (error: any) {
         console.error('Failed to setup event listeners:', error);
@@ -217,10 +251,12 @@ function App() {
         } catch (e) {
           console.warn('Failed to get locale, using default zh-CN');
         }
-        
+        // 初始化插件鉴权(公开发布企业内插件/三方企业插件场景下需要解除下方注释进行鉴权)
+        // await initConfigPermission();
+
         // 初始化数据
         await initialize();
-        
+
         // 设置事件监听
         setupEvents();
       },
@@ -239,7 +275,6 @@ function App() {
         }
       });
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // 这里故意只在组件挂载时运行一次
 
   // 清理事件监听器
